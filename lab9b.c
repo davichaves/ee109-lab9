@@ -2,7 +2,7 @@
 *
 *  Name: Davi Rodrigues Chaves
 *  Section: W 3:30-5:00 PM
-*  Assignment: Lab 9a - Pulse Width Modulation
+*  Assignment: Lab 9b - Pulse Width Modulation
 *
 ********************************************/
 
@@ -15,7 +15,7 @@ void init_ports(void);
 
 volatile char hasChanged;
 
-int var = 0;
+volatile int var = 47;
 
 int aState, bState, prevAState, prevBState;
 
@@ -67,23 +67,22 @@ ISR(PCINT1_vect) {
             }
         }
     }
+    if (var < 47) {
+        var = 47;
+    }
+    if (var > 141) {
+        var = 141;
+    }
 }
 
 int main(void) {
     init_ports();
     init_pwm();
-    var = OCR0A;
     sei(); // Enable interrupts
     /* Main programs goes here */
     while (1) {
         if (hasChanged == 1) {
-            if (var < 0) {
-                var = 0;
-            }
-            if (var > 255) {
-                var = 255;
-            }
-            OCR0A = var;
+            OCR1B = var;
             hasChanged = 0;
         }
     } // Loop forever
@@ -97,8 +96,7 @@ int main(void) {
 void init_ports() {
     PCICR |= (1 << PCIE1);
     PCMSK1 |= ((1 << PCINT12)| (1 << PCINT13));
-    DDRD |= 0xF0; //setting D4-D7 as outputs
-    DDRB |= 0x03; //seeting B1-B2 as outputs
+    DDRB |= 0x06; //setting B1-B2 as outputs
     PORTC |= ((1 << PC4) | (1 << PC5));
 }
 
@@ -107,8 +105,12 @@ void init_ports() {
 */
 
 void init_pwm(void) {
-    TCCR0A |= (0b11 << WGM00); // Fast PWM mode, modulus = 256
-    TCCR0A |= (0b10 << COM0A0); // Turn D6 on at 0x00 and off at OCR0A
-    OCR0A = 128; // Initial pulse duty cycle of 50%
-    TCCR0B |= (0b101 << CS00); // Prescaler = 1024 => 16ms period
+    TCCR1B |= (1 << WGM12); // Set to CTC mode
+    TCCR1B |= (1 << WGM13);
+    TCCR1A |= (1 << WGM10);
+    TCCR1A |= (1 << WGM11);
+    TCCR1A |= (1 << COM1B1);
+    TCCR1B |= (1 << CS12);
+    OCR1A = 1250;
+    OCR1B = 47; //(47 -> 0.75 ms and 141 -> 2.25 ms)
 }
